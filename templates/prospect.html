@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ prospect.title }} — ProspectIQ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e5e5e5; min-height: 100vh; }
+    .topbar { padding: 18px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 16px; }
+    .logo { font-size: 18px; font-weight: 600; color: #fff; }
+    .logo span { color: #6366f1; }
+    nav a { font-size: 13px; color: #888; text-decoration: none; margin-left: 16px; }
+    nav a:hover { color: #fff; }
+    .back { margin-left: auto; font-size: 13px; color: #6366f1; text-decoration: none; }
+    .main { max-width: 860px; margin: 40px auto; padding: 0 24px; }
+    .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .card h2 { font-size: 14px; color: #888; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .meta { font-size: 13px; color: #888; margin-bottom: 6px; }
+    .meta span { color: #ccc; }
+    .btn { display: inline-block; background: #6366f1; color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 500; cursor: pointer; text-decoration: none; }
+    .btn:hover { background: #5254cc; }
+    .btn-ghost { background: #222; color: #aaa; border: 1px solid #333; }
+    .btn-ghost:hover { background: #2a2a2a; }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .status { display: inline-block; font-size: 11px; padding: 2px 9px; border-radius: 20px; font-weight: 500; }
+    .status.scraped { background: #1a3a2a; color: #4ade80; }
+    .status.analyzed { background: #1a1a3a; color: #818cf8; }
+    .status.scored { background: #2a1a3a; color: #c084fc; }
+    .status.drafted { background: #3a2a1a; color: #fb923c; }
+    .status.approved { background: #1a3a2a; color: #4ade80; }
+    .status.sent { background: #1a2a3a; color: #60a5fa; }
+    .status.error { background: #3a1a1a; color: #f87171; }
+    .score-card { display: flex; align-items: center; gap: 24px; padding: 20px; background: #111; border-radius: 10px; margin-bottom: 16px; }
+    .score-circle { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+    .score-circle svg { transform: rotate(-90deg); }
+    .score-num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .score-num span:first-child { font-size: 22px; font-weight: 700; line-height: 1; }
+    .score-num span:last-child { font-size: 11px; color: #666; }
+    .score-info { flex: 1; }
+    .grade-badge { display: inline-block; font-size: 13px; font-weight: 700; padding: 3px 12px; border-radius: 6px; margin-bottom: 8px; }
+    .grade-A { background: #1a3a2a; color: #4ade80; }
+    .grade-B { background: #1a2a3a; color: #60a5fa; }
+    .grade-C { background: #3a3a1a; color: #facc15; }
+    .grade-D { background: #3a1a1a; color: #f87171; }
+    .verdict { font-size: 13px; color: #ccc; line-height: 1.5; }
+    .match-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .match-item h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .match-item.good h3 { color: #4ade80; }
+    .match-item.bad h3 { color: #f87171; }
+    .match-row { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #ccc; padding: 4px 0; line-height: 1.4; }
+    .match-icon { flex-shrink: 0; margin-top: 1px; }
+    .analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    .analysis-item h3 { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag { font-size: 12px; padding: 3px 10px; border-radius: 20px; background: #222; border: 1px solid #333; color: #ccc; }
+    .summary-text { font-size: 13px; color: #ccc; line-height: 1.6; margin-bottom: 14px; }
+    .subject-line { font-size: 13px; font-weight: 500; color: #818cf8; background: #111; border: 1px solid #2a2a4a; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; }
+    .subject-label { font-size: 11px; color: #555; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    textarea.draft-body { width: 100%; min-height: 160px; background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 14px; color: #ccc; font-size: 13px; line-height: 1.7; font-family: system-ui, sans-serif; resize: vertical; outline: none; }
+    textarea.draft-body:focus { border-color: #6366f1; }
+    .scraped-text { font-size: 13px; color: #999; line-height: 1.7; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; background: #111; border: 1px solid #222; border-radius: 8px; padding: 14px; }
+    .tab-bar { display: flex; gap: 0; border-bottom: 1px solid #2a2a2a; margin-bottom: 16px; }
+    .tab-btn { padding: 8px 18px; background: none; border: none; border-bottom: 2px solid transparent; color: #888; font-size: 13px; cursor: pointer; }
+    .tab-btn.active { border-bottom-color: #6366f1; color: #6366f1; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo">Prospect<span>IQ</span></div>
+    <nav>
+      <a href="/">Prospects</a>
+      <a href="/strategy">Strategy</a>
+      <a href="/review">Review Queue</a>
+    </nav>
+    <a href="/" class="back">← Back</a>
+  </div>
+
+  <div class="main">
+
+    <!-- Company Info -->
+    <div class="card">
+      <h2>Company Info</h2>
+      <p class="meta">Title: <span>{{ prospect.title or "—" }}</span></p>
+      <p class="meta">URL: <span>{{ prospect.url }}</span></p>
+      <p class="meta">Status: <span class="status {{ prospect.status }}">{{ prospect.status }}</span></p>
+      <div class="btn-row">
+        <form action="/analyze/{{ prospect.id }}" method="post" onsubmit="this.querySelector('button').textContent='Analyzing…'; this.querySelector('button').disabled=true">
+          <button type="submit" class="btn {% if prospect.status not in ['scraped','error'] %}btn-ghost{% endif %}">
+            🤖 {% if prospect.status == 'scraped' %}Run Analysis + Score{% else %}Re-analyze{% endif %}
+          </button>
+        </form>
+        {% if analysis %}
+        <form action="/draft/{{ prospect.id }}" method="post" onsubmit="this.querySelector('button').textContent='Drafting…'; this.querySelector('button').disabled=true">
+          <button type="submit" class="btn {% if draft %}btn-ghost{% endif %}">
+            ✍️ {% if draft %}Regenerate Draft{% else %}Generate Email Draft{% endif %}
+          </button>
+        </form>
+        {% endif %}
+        {% if score %}
+        <a href="/prospect/{{ prospect.id }}/report" class="btn" style="background:#1a2a1a; color:#4ade80; border:1px solid #2a4a2a;">📋 BD Report</a>
+        {% endif %}
+        {% if prospect.approval_status == 'approved' %}
+        <a href="/prospect/{{ prospect.id }}/send" class="btn" style="background:#166534; color:#4ade80;">🚀 Send Email</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ICP Score Card -->
+    {% if score %}
+    <div class="card">
+      <h2>ICP Match Score</h2>
+      {% set s = (score.score | default(0)) | int %}
+      {% if s >= 80 %}{% set color = "#4ade80" %}
+      {% elif s >= 60 %}{% set color = "#60a5fa" %}
+      {% elif s >= 40 %}{% set color = "#facc15" %}
+      {% else %}{% set color = "#f87171" %}{% endif %}
+      <div class="score-card">
+        <div class="score-circle">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#222" stroke-width="8"/>
+            <circle cx="40" cy="40" r="34" fill="none" stroke="{{ color }}" stroke-width="8"
+              stroke-dasharray="{{ (s / 100 * 213.6) | round(1) }} 213.6" stroke-linecap="round"/>
+          </svg>
+          <div class="score-num">
+            <span style="color:{{ color }}">{{ s }}</span>
+            <span>/100</span>
+          </div>
+        </div>
+        <div class="score-info">
+          <span class="grade-badge grade-{{ score.grade | default('C') }}">Grade {{ score.grade | default('C') }}</span>
+          <p class="verdict">{{ score.verdict | default('') }}</p>
+        </div>
+      </div>
+      <div class="match-grid">
+        <div class="match-item good">
+          <h3>✓ Matches</h3>
+          {% for m in score.matches | default([]) %}
+          <div class="match-row"><span class="match-icon" style="color:#4ade80">✓</span><span>{{ m }}</span></div>
+          {% endfor %}
+        </div>
+        <div class="match-item bad">
+          <h3>✗ Gaps</h3>
+          {% for m in score.misses | default([]) %}
+          <div class="match-row"><span class="match-icon" style="color:#f87171">✗</span><span>{{ m }}</span></div>
+          {% else %}
+          <div class="match-row" style="color:#666">No significant gaps</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Analysis -->
+    {% if analysis %}
+    <div class="card">
+      <h2>AI Analysis</h2>
+      <p class="summary-text">{{ analysis.company_summary | default('') }}</p>
+      <div class="analysis-grid">
+        <div class="analysis-item">
+          <h3>Industry</h3>
+          <div class="tag-list"><span class="tag">{{ analysis.industry | default('—') }}</span></div>
+        </div>
+        <div class="analysis-item">
+          <h3>Company Size</h3>
+          <div class="tag-list"><span class="tag">{{ analysis.company_size | default('—') }}</span></div>
+        </div>
+        <div class="analysis-item">
+          <h3>ICP Signals</h3>
+          <div class="tag-list">
+            {% for s in analysis.icp_signals | default([]) %}<span class="tag">{{ s }}</span>{% endfor %}
+          </div>
+        </div>
+        <div class="analysis-item">
+          <h3>Pain Points</h3>
+          <div class="tag-list">
+            {% for p in analysis.pain_points | default([]) %}<span class="tag">{{ p }}</span>{% endfor %}
+          </div>
+        </div>
+        <div class="analysis-item">
+          <h3>Decision Makers</h3>
+          <div class="tag-list">
+            {% for d in analysis.decision_maker_titles | default([]) %}<span class="tag">{{ d }}</span>{% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Outreach Drafts -->
+    {% if draft %}
+    <div class="card">
+      <h2>✉️ Outreach Drafts</h2>
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tab-email" onclick="showTab('email')">📧 Cold Email</button>
+        <button class="tab-btn" id="tab-linkedin" onclick="showTab('linkedin')">💼 LinkedIn DM</button>
+      </div>
+
+      <div id="pane-email">
+        <p class="subject-label">Subject</p>
+        <div class="subject-line">{{ draft.email_subject or draft.subject or "—" }}</div>
+        <p class="subject-label" style="margin-top:12px">Body</p>
+        <textarea class="draft-body">{{ draft.email_body or draft.body or "" }}</textarea>
+      </div>
+
+      <div id="pane-linkedin" style="display:none">
+        <p class="subject-label">Message <span style="color:#555">(max 280 chars)</span></p>
+        <textarea class="draft-body" style="min-height:100px" id="li-dm" oninput="updateCount()">{{ draft.linkedin_dm or "" }}</textarea>
+        <p style="font-size:11px;color:#555;margin-top:6px;text-align:right"><span id="li-count">0</span>/280</p>
+      </div>
+
+      <p style="font-size:11px;color:#555;margin-top:12px">Edit above then go to <a href="/review" style="color:#6366f1">Review Queue</a> to approve.</p>
+    </div>
+    {% endif %}
+
+    <!-- Scraped Content -->
+    <div class="card">
+      <h2>Scraped Content</h2>
+      <div class="scraped-text">{{ prospect.scraped_text or "Nothing scraped yet." }}</div>
+    </div>
+  </div>
+
+  <script>
+    function showTab(tab) {
+      document.getElementById('pane-email').style.display = tab === 'email' ? 'block' : 'none';
+      document.getElementById('pane-linkedin').style.display = tab === 'linkedin' ? 'block' : 'none';
+      document.getElementById('tab-email').className = 'tab-btn' + (tab === 'email' ? ' active' : '');
+      document.getElementById('tab-linkedin').className = 'tab-btn' + (tab === 'linkedin' ? ' active' : '');
+      if (tab === 'linkedin') updateCount();
+    }
+    function updateCount() {
+      const el = document.getElementById('li-dm');
+      if (el) document.getElementById('li-count').textContent = el.value.length;
+    }
+    updateCount();
+  </script>
+</body>
+</html>

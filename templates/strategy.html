@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Strategy — ProspectIQ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e5e5e5; min-height: 100vh; }
+    .topbar { padding: 18px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 16px; }
+    .logo { font-size: 18px; font-weight: 600; color: #fff; }
+    .logo span { color: #6366f1; }
+    .nav a { font-size: 13px; color: #888; text-decoration: none; margin-left: 16px; }
+    .nav a:hover { color: #fff; }
+    .nav a.active { color: #6366f1; }
+    .main { max-width: 860px; margin: 40px auto; padding: 0 24px; }
+    .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .card h2 { font-size: 14px; color: #888; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+    textarea { width: 100%; min-height: 120px; background: #111; border: 1px solid #333; border-radius: 8px; padding: 12px 14px; color: #e5e5e5; font-size: 13px; line-height: 1.6; font-family: system-ui, sans-serif; resize: vertical; outline: none; }
+    textarea:focus { border-color: #6366f1; }
+    textarea::placeholder { color: #555; }
+    .btn { background: #6366f1; color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 12px; }
+    .btn:hover { background: #5254cc; }
+    .section-title { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .tag { font-size: 12px; padding: 4px 12px; border-radius: 20px; background: #222; border: 1px solid #333; color: #ccc; }
+    .tag.industry { border-color: #3a3a6a; color: #818cf8; background: #1a1a3a; }
+    .tag.pain { border-color: #4a2a2a; color: #f87171; background: #2a1a1a; }
+    .tag.trigger { border-color: #2a4a2a; color: #4ade80; background: #1a2a1a; }
+    .tag.dm { border-color: #4a3a1a; color: #fb923c; background: #2a1a0a; }
+    .icp-summary { font-size: 13px; color: #ccc; line-height: 1.6; padding: 14px; background: #111; border: 1px solid #222; border-radius: 8px; margin-bottom: 16px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo">Prospect<span>IQ</span></div>
+    <nav class="nav">
+      <a href="/">Prospects</a>
+      <a href="/strategy" class="active">Strategy</a>
+    </nav>
+  </div>
+
+  <div class="main">
+    <div class="card">
+      <h2>Your Product</h2>
+      <form action="/strategy" method="post" onsubmit="this.querySelector('button').textContent='Generating…'; this.querySelector('button').disabled=true">
+        <textarea name="product_description" placeholder="Describe your product or service. E.g. We build AI-powered cybersecurity tools for B2B SaaS companies to detect threats and pass compliance audits faster..." required>{{ product_description }}</textarea>
+        <button type="submit" class="btn">🎯 {% if strategy %}Regenerate Strategy{% else %}Generate Target Strategy{% endif %}</button>
+      </form>
+    </div>
+
+    {% if strategy %}
+    <div class="card">
+      <h2>Target Profile</h2>
+
+      <p class="icp-summary">{{ strategy.icp_summary }}</p>
+
+      <div class="grid2">
+        <div>
+          <p class="section-title">Target Industries</p>
+          <div class="tag-list">
+            {% for i in strategy.target_industries %}
+            <span class="tag industry">{{ i }}</span>
+            {% endfor %}
+          </div>
+
+          <p class="section-title">Company Sizes</p>
+          <div class="tag-list">
+            {% for s in strategy.company_sizes %}
+            <span class="tag">{{ s }}</span>
+            {% endfor %}
+          </div>
+
+          <p class="section-title">Geographies</p>
+          <div class="tag-list">
+            {% for g in strategy.geographies %}
+            <span class="tag">{{ g }}</span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div>
+          <p class="section-title">Pain Points</p>
+          <div class="tag-list">
+            {% for p in strategy.pain_points %}
+            <span class="tag pain">{{ p }}</span>
+            {% endfor %}
+          </div>
+
+          <p class="section-title">Buying Triggers</p>
+          <div class="tag-list">
+            {% for t in strategy.buying_triggers %}
+            <span class="tag trigger">{{ t }}</span>
+            {% endfor %}
+          </div>
+
+          <p class="section-title">Decision Makers</p>
+          <div class="tag-list">
+            {% for d in strategy.decision_makers %}
+            <span class="tag dm">{{ d }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</body>
+</html>

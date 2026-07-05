@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Send Email — {{ prospect.title }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e5e5e5; min-height: 100vh; }
+    .topbar { padding: 18px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 16px; }
+    .logo { font-size: 18px; font-weight: 600; color: #fff; }
+    .logo span { color: #6366f1; }
+    nav a { font-size: 13px; color: #888; text-decoration: none; margin-left: 16px; }
+    .back { margin-left: auto; font-size: 13px; color: #6366f1; text-decoration: none; }
+    .main { max-width: 640px; margin: 40px auto; padding: 0 24px; }
+    .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+    .card h2 { font-size: 14px; color: #888; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .preview-box { background: #111; border: 1px solid #222; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #ccc; line-height: 1.6; white-space: pre-wrap; max-height: 160px; overflow-y: auto; }
+    .subject-text { font-size: 13px; color: #818cf8; font-weight: 500; margin-bottom: 12px; }
+
+    .email-option { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #111; border: 1px solid #2a2a2a; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s; }
+    .email-option:hover { border-color: #6366f1; }
+    .email-option input[type=radio] { accent-color: #6366f1; width: 15px; height: 15px; flex-shrink: 0; }
+    .email-option label { font-size: 13px; color: #ccc; cursor: pointer; flex: 1; }
+    .email-badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #1a1a3a; color: #818cf8; }
+
+    .divider { display: flex; align-items: center; gap: 10px; margin: 14px 0; }
+    .divider-line { flex: 1; height: 1px; background: #222; }
+    .divider-text { font-size: 11px; color: #555; }
+
+    input[type=email] { width: 100%; background: #111; border: 1px solid #333; border-radius: 8px; padding: 10px 14px; color: #e5e5e5; font-size: 13px; outline: none; }
+    input[type=email]:focus { border-color: #6366f1; }
+    input[type=email]::placeholder { color: #555; }
+
+    .btn-send { width: 100%; background: #166534; color: #4ade80; border: 1px solid #166534; border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 16px; }
+    .btn-send:hover { background: #14532d; }
+    .warning { font-size: 12px; color: #fb923c; background: #2a1a0a; border: 1px solid #4a2a0a; border-radius: 8px; padding: 10px 14px; margin-top: 12px; }
+    .no-emails { font-size: 13px; color: #555; padding: 10px 0; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo">Prospect<span>IQ</span></div>
+    <nav>
+      <a href="/">Prospects</a>
+      <a href="/strategy">Strategy</a>
+      <a href="/review">Review Queue</a>
+    </nav>
+    <a href="/prospect/{{ prospect.id }}" class="back">← Back</a>
+  </div>
+
+  <div class="main">
+
+    <!-- Email Preview -->
+    <div class="card">
+      <h2>Email Preview</h2>
+      <p class="label">Subject</p>
+      <p class="subject-text">{{ prospect.approved_email_subject }}</p>
+      <p class="label">Body</p>
+      <div class="preview-box">{{ prospect.approved_email_body }}</div>
+    </div>
+
+    <!-- Recipient Picker -->
+    <div class="card">
+      <h2>Choose Recipient</h2>
+
+      <form action="/prospect/{{ prospect.id }}/send" method="post" onsubmit="prepareSubmit(event)">
+
+        {% if emails %}
+        <p class="label" style="margin-bottom:10px">Found on their website</p>
+        {% for email in emails %}
+        <div class="email-option" onclick="selectEmail('{{ email }}')">
+          <input type="radio" name="found_email" value="{{ email }}" id="email-{{ loop.index }}">
+          <label for="email-{{ loop.index }}">{{ email }}</label>
+          {% if loop.first %}<span class="email-badge">recommended</span>{% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-emails">No emails found on their website.</p>
+        {% endif %}
+
+        <div class="divider">
+          <div class="divider-line"></div>
+          <span class="divider-text">or enter manually</span>
+          <div class="divider-line"></div>
+        </div>
+
+        <p class="label">Custom email</p>
+        <input type="email" id="custom-email" placeholder="cto@company.com" />
+
+        <!-- This is what actually gets submitted -->
+        <input type="hidden" name="recipient_email" id="final-email" required />
+
+        <button type="submit" class="btn-send">🚀 Send Email Now</button>
+        <p class="warning">⚠️ This will send a real email. Make sure you're happy with the content above.</p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function selectEmail(email) {
+      document.getElementById('final-email').value = email;
+      document.getElementById('custom-email').value = '';
+    }
+
+    function prepareSubmit(e) {
+      const custom = document.getElementById('custom-email').value.trim();
+      const finalEl = document.getElementById('final-email');
+      if (custom) finalEl.value = custom;
+      if (!finalEl.value) {
+        e.preventDefault();
+        alert('Please select or enter a recipient email.');
+      }
+    }
+
+    // Auto-select first radio
+    const first = document.querySelector('input[type=radio]');
+    if (first) {
+      first.checked = true;
+      document.getElementById('final-email').value = first.value;
+    }
+  </script>
+</body>
+</html>

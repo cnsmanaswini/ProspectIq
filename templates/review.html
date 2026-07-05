@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Review Queue — ProspectIQ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e5e5e5; min-height: 100vh; }
+    .topbar { padding: 18px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 16px; }
+    .logo { font-size: 18px; font-weight: 600; color: #fff; }
+    .logo span { color: #6366f1; }
+    nav a { font-size: 13px; color: #888; text-decoration: none; margin-left: 16px; }
+    nav a:hover { color: #fff; }
+    nav a.active { color: #6366f1; }
+    .main { max-width: 900px; margin: 40px auto; padding: 0 24px 60px; }
+    .section-head { font-size: 13px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin: 28px 0 12px; display: flex; align-items: center; gap: 8px; }
+    .count-badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+    .badge-pending { background: #3a3a1a; color: #facc15; }
+    .badge-approved { background: #1a3a2a; color: #4ade80; }
+    .badge-rejected { background: #3a1a1a; color: #f87171; }
+
+    .prospect-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 20px; margin-bottom: 12px; }
+    .prospect-card.approved { border-color: #1a4a2a; }
+    .prospect-card.rejected { border-color: #3a1a1a; opacity: 0.7; }
+
+    .card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .card-title { font-size: 15px; font-weight: 500; color: #fff; flex: 1; }
+    .card-url { font-size: 12px; color: #666; }
+    .score-pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+    .score-A { background: #1a3a2a; color: #4ade80; }
+    .score-B { background: #1a2a3a; color: #60a5fa; }
+    .score-C { background: #3a3a1a; color: #facc15; }
+    .score-D { background: #3a1a1a; color: #f87171; }
+
+    .draft-preview { background: #111; border: 1px solid #222; border-radius: 8px; padding: 14px; margin-bottom: 14px; }
+    .draft-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .subject-text { font-size: 13px; color: #818cf8; font-weight: 500; margin-bottom: 8px; }
+    textarea.edit-area { width: 100%; background: #0a0a0a; border: 1px solid #333; border-radius: 6px; padding: 10px; color: #ccc; font-size: 12px; line-height: 1.6; font-family: system-ui, sans-serif; resize: vertical; outline: none; }
+    textarea.edit-area:focus { border-color: #6366f1; }
+
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid #2a2a2a; margin-bottom: 14px; }
+    .tab-btn { padding: 7px 16px; background: none; border: none; border-bottom: 2px solid transparent; color: #888; font-size: 12px; cursor: pointer; }
+    .tab-btn.active { border-bottom-color: #6366f1; color: #6366f1; font-weight: 500; }
+
+    .action-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-approve { background: #166534; color: #4ade80; border: 1px solid #166534; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 500; cursor: pointer; }
+    .btn-approve:hover { background: #14532d; }
+    .btn-reject { background: #3a1a1a; color: #f87171; border: 1px solid #3a1a1a; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 500; cursor: pointer; }
+    .btn-reject:hover { background: #4a1a1a; }
+    .btn-view { background: #222; color: #aaa; border: 1px solid #333; border-radius: 8px; padding: 9px 16px; font-size: 13px; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn-view:hover { background: #2a2a2a; }
+    .btn-reset { background: #222; color: #666; border: 1px solid #2a2a2a; border-radius: 8px; padding: 9px 16px; font-size: 12px; cursor: pointer; }
+
+    .empty { color: #555; font-size: 13px; padding: 20px 0; }
+    .approved-info { font-size: 12px; color: #4ade80; margin-top: 4px; }
+    .rejected-info { font-size: 12px; color: #f87171; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo">Prospect<span>IQ</span></div>
+    <nav>
+      <a href="/">Prospects</a>
+      <a href="/strategy">Strategy</a>
+      <a href="/review" class="active">Review Queue</a>
+    </nav>
+  </div>
+
+  <div class="main">
+
+    <!-- PENDING -->
+    <div class="section-head">
+      Pending Review
+      <span class="count-badge badge-pending">{{ pending | length }}</span>
+    </div>
+
+    {% if pending %}
+    {% for p in pending %}
+    {% set draft = p.draft_json | fromjson if p.draft_json else {} %}
+    <div class="prospect-card" id="card-{{ p.id }}">
+      <div class="card-head">
+        <div>
+          <div class="card-title">{{ p.title or "Unknown Company" }}</div>
+          <div class="card-url">{{ p.url }}</div>
+        </div>
+        {% if p.score %}
+        <span class="score-pill score-{{ p.score.grade }}">{{ p.score.score }}/100</span>
+        {% endif %}
+        <a href="/prospect/{{ p.id }}" class="btn-view">View →</a>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab({{ p.id }}, 'email', this)">📧 Email</button>
+        <button class="tab-btn" onclick="switchTab({{ p.id }}, 'linkedin', this)">💼 LinkedIn DM</button>
+      </div>
+
+      <form action="/prospect/{{ p.id }}/approve" method="post">
+        <!-- All fields always submitted, tabs just show/hide visually -->
+        <input type="hidden" name="email_subject" value="{{ draft.email_subject or draft.subject or '' }}">
+
+        <!-- Email pane -->
+        <div id="pane-{{ p.id }}-email">
+          <div class="draft-preview">
+            <div class="draft-label">Subject</div>
+            <div class="subject-text">{{ draft.email_subject or draft.subject or "—" }}</div>
+            <div class="draft-label">Body</div>
+            <textarea class="edit-area" name="email_body" rows="5">{{ draft.email_body or draft.body or "" }}</textarea>
+          </div>
+        </div>
+
+        <!-- LinkedIn pane -->
+        <div id="pane-{{ p.id }}-linkedin" style="display:none">
+          <div class="draft-preview">
+            <div class="draft-label">LinkedIn DM <span style="color:#555">(max 280 chars)</span></div>
+            <textarea class="edit-area" name="linkedin_dm" rows="3" maxlength="280">{{ draft.linkedin_dm or "" }}</textarea>
+          </div>
+        </div>
+
+        <!-- Hidden linkedin_dm shown when email tab active so form always has it -->
+        <div id="pane-{{ p.id }}-linkedin-hidden" style="display:none">
+          <textarea name="linkedin_dm" style="display:none">{{ draft.linkedin_dm or "" }}</textarea>
+        </div>
+
+        <div class="action-row">
+          <button type="submit" class="btn-approve">✓ Approve & Save</button>
+          <button type="button" class="btn-reject" onclick="rejectProspect({{ p.id }})">✗ Reject</button>
+          <a href="/prospect/{{ p.id }}/report" class="btn-view">📋 Report</a>
+        </div>
+      </form>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p class="empty">No drafts pending review. Generate drafts from the Prospects page.</p>
+    {% endif %}
+
+    <!-- APPROVED -->
+    <div class="section-head">
+      Approved
+      <span class="count-badge badge-approved">{{ approved | length }}</span>
+    </div>
+
+    {% if approved %}
+    {% for p in approved %}
+    <div class="prospect-card approved">
+      <div class="card-head">
+        <div>
+          <div class="card-title">{{ p.title or "Unknown" }}</div>
+          <div class="approved-info">✓ Approved — ready to send</div>
+        </div>
+        {% if p.score %}
+        <span class="score-pill score-{{ p.score.grade }}">{{ p.score.score }}/100</span>
+        {% endif %}
+        <a href="/prospect/{{ p.id }}/send" class="btn-view" style="background:#166534;color:#4ade80;border:1px solid #166534;">🚀 Send Email</a>
+        <a href="/prospect/{{ p.id }}" class="btn-view">View →</a>
+        <form action="/prospect/{{ p.id }}/reset" method="post" style="display:inline">
+          <button type="submit" class="btn-reset">↺ Reset</button>
+        </form>
+      </div>
+      {% if p.approved_email_subject %}
+      <div class="draft-preview">
+        <div class="draft-label">Approved Subject</div>
+        <div class="subject-text">{{ p.approved_email_subject }}</div>
+        <div class="draft-label" style="margin-top:8px">Email Body</div>
+        <div style="font-size:12px; color:#888; white-space:pre-wrap; line-height:1.6">{{ p.approved_email_body[:200] }}{% if p.approved_email_body|length > 200 %}…{% endif %}</div>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <p class="empty">No approved drafts yet.</p>
+    {% endif %}
+
+    <!-- REJECTED -->
+    <div class="section-head">
+      Rejected
+      <span class="count-badge badge-rejected">{{ rejected | length }}</span>
+    </div>
+
+    {% if rejected %}
+    {% for p in rejected %}
+    <div class="prospect-card rejected">
+      <div class="card-head">
+        <div>
+          <div class="card-title">{{ p.title or "Unknown" }}</div>
+          <div class="rejected-info">✗ Rejected</div>
+        </div>
+        <a href="/prospect/{{ p.id }}" class="btn-view">View →</a>
+        <form action="/prospect/{{ p.id }}/reset" method="post" style="display:inline">
+          <button type="submit" class="btn-reset">↺ Reconsider</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p class="empty">No rejected prospects.</p>
+    {% endif %}
+
+  </div>
+
+  <script>
+    function switchTab(id, tab, btn) {
+      document.getElementById(`pane-${id}-email`).style.display = tab === 'email' ? 'block' : 'none';
+      document.getElementById(`pane-${id}-linkedin`).style.display = tab === 'linkedin' ? 'block' : 'none';
+      btn.closest('.tabs').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function rejectProspect(id) {
+      if (!confirm('Reject this prospect?')) return;
+      fetch(`/prospect/${id}/reject`, { method: 'POST' })
+        .then(() => location.reload());
+    }
+  </script>
+</body>
+</html>
